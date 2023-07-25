@@ -1,0 +1,71 @@
+﻿@page "/"
+
+@using BLAZOR_TESTE.Service
+@using System.Timers
+
+@inject IServiceTeste ServiceTeste
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+<div>
+    <p>count 1 = @Count1</p>
+    <p>count 2 = @Count2</p>
+    <p>se passaram @contador segundos</p>
+</div>
+
+@code {
+    private int Count1 { get; set; }
+    private int Count2 { get; set; }
+
+    private int contador = 0;
+    private Timer timer { get; set; } = new();
+
+    private async Task IniciarContador()
+    {
+        timer = new Timer(1000); // Timer com intervalo de 1 segundo (1000 ms)
+        timer.Elapsed += async (sender, e) => await AtualizarContadorAsync();
+        timer.Start();
+    }
+
+    private void PararContador()
+    {
+        if (timer != null)
+        {
+            timer.Stop();
+            timer.Dispose();
+            timer = null!;
+        }
+    }
+
+    private async Task AtualizarContadorAsync()
+    {
+        contador++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //DESTA FORMA O TEMPO DE EXECUÇÃO É O TEMPO DA SOMA DAS TASKS, OU SEJA 15 SEGUNDOS
+        //Count 1 = await ServiceTeste.GetCount_1(); //TEMPO DE EXECUÇÃO DE 5 SEGUNDOS
+        //Count 2 = await ServiceTeste.GetCount_2(); //TEMPO DE EXECUÇÃO DE 10 SEGUNDOS
+
+        //DESTA FORMA O TEMPO DE EXECUÇÃO É O TEMPO DA MAIOR TASK, OU SEJA 10 SEGUNDOS
+        Task<int> task1 = ServiceTeste.GetCount_1();
+        Task<int> task2 = ServiceTeste.GetCount_2();
+        Task task3 = IniciarContador();
+
+        await Task.WhenAll(task1, task2, task3);
+
+        Count1 = await task1;
+        Count2 = await task2;
+
+        PararContador();
+        StateHasChanged();
+    }
+}
